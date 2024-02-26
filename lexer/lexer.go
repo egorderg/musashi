@@ -25,15 +25,15 @@ func (l *Lexer) Next() Token {
 		}
 
 		if unicode.IsSpace(r) {
-			if r == '\n' {
+			if isNewLine(r) {
 				l.resetPos()
 			}
 			continue
 		}
 
-		if r == comment {
+		if isComment(r) {
 			l.readTill(func(i int, r rune) bool {
-				if r == '\n' {
+				if isNewLine(r) {
 					return false
 				}
 
@@ -48,45 +48,25 @@ func (l *Lexer) Next() Token {
 
 func (l *Lexer) lex(r rune) Token {
 	switch {
-	case r == leftParen:
+	case isLeftParen(r):
 		return l.newToken(TokenLeftParen, nil, 1)
-	case r == rightParen:
+	case isRightParen(r):
 		return l.newToken(TokenRightParen, nil, 1)
-	case r == terminator:
-		return l.newToken(TokenTerminator, nil, 1)
 	case isNumber(r):
 		l.unreadRune()
 		return l.lexNumber()
-	case isSymbolStart(r):
-		l.unreadRune()
-		return l.lexSymbol()
-	case r == stringQuote:
+	case isStringQuote(r):
 		return l.lexString()
 	default:
-		return l.newToken(TokenIllegal, string(r), 1)
+		l.unreadRune()
+		return l.lexSymbol()
 	}
-}
-
-func (l *Lexer) lexSymbol() Token {
-	v := l.readTill(func(_ int, r rune) bool {
-		return isSymbol(r)
-	})
-
-	s := string(v)
-	switch {
-	case s == valueTrue || s == valueFalse:
-		return l.newToken(TokenBool, s, len(s))
-	case s == valueNil:
-		return l.newToken(TokenNil, nil, len(s))
-	}
-
-	return l.newToken(TokenSymbol, s, len(s))
 }
 
 func (l *Lexer) lexNumber() Token {
 	isFloat := false
 	v := l.readTill(func(i int, r rune) bool {
-		if r == floatPoint && !isFloat {
+		if isFloatPoint(r) && !isFloat {
 			isFloat = true
 			return true
 		}
@@ -100,12 +80,12 @@ func (l *Lexer) lexNumber() Token {
 func (l *Lexer) lexString() Token {
 	isInvalid := false
 	v := l.readTill(func(i int, r rune) bool {
-		if r == '\n' {
+		if isNewLine(r) {
 			isInvalid = true
 			return false
 		}
 
-		return r != stringQuote
+		return !isStringQuote(r)
 	})
 
 	s := string(v)
@@ -117,6 +97,19 @@ func (l *Lexer) lexString() Token {
 	}
 
 	return l.newToken(TokenString, s, len(s)+2)
+}
+
+func (l *Lexer) lexSymbol() Token {
+	v := l.readTill(func(_ int, r rune) bool {
+		return !isSpace(r) && !isStringQuote(r) && !isNumber(r) && !isComment(r)
+	})
+
+	s := string(v)
+	if t, tval := keywordType(s); t != TokenIllegal {
+		return l.newToken(t, tval, len(s))
+	}
+
+	return l.newToken(TokenSymbol, s, len(s))
 }
 
 func (l *Lexer) readTill(cb func(i int, r rune) bool) []rune {

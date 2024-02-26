@@ -60,7 +60,7 @@ func TestLexer(t *testing.T) {
 }
 
 func commentData() Dataset {
-	return Dataset{name: "comments", input: "true #k平仮 2.234 dk jfk \n1.23#test", tokens: []Token{
+	return Dataset{name: "comments", input: "true#k平仮 2.234 dk jfk \n1.23#test", tokens: []Token{
 		{TokenBool, "true", 0, 0},
 		{TokenNumber, "1.23", 1, 0},
 	}}
@@ -75,35 +75,36 @@ func keywordData() Dataset {
 }
 
 func symbolData() Dataset {
-	return Dataset{name: "symbols", input: "-a.bc :po\r\ns:_ _ + * & | < > : % / -\n -平仮-*k/ _false nil-two", tokens: []Token{
-		{TokenSymbol, "-a", 0, 0},
-		{TokenTerminator, nil, 0, 2},
-		{TokenSymbol, "bc", 0, 3},
-		{TokenSymbol, ":po", 0, 6},
-		{TokenSymbol, "s:_", 1, 0},
-		{TokenSymbol, "_", 1, 4},
-		{TokenSymbol, "+", 1, 6},
-		{TokenSymbol, "*", 1, 8},
-		{TokenSymbol, "&", 1, 10},
-		{TokenSymbol, "|", 1, 12},
-		{TokenSymbol, "<", 1, 14},
-		{TokenSymbol, ">", 1, 16},
-		{TokenSymbol, ":", 1, 18},
-		{TokenSymbol, "%", 1, 20},
-		{TokenSymbol, "/", 1, 22},
-		{TokenSymbol, "-", 1, 24},
-		{TokenSymbol, "-平仮-*k/", 2, 1},
-		{TokenSymbol, "_false", 2, 13},
-		{TokenSymbol, "nil-two", 2, 20},
+	return Dataset{name: "symbols", input: "++\"str\"平032^t#test\n-a.bc :po\r\nset _ + * & | < > : % / -\n %-平仮-*k/", tokens: []Token{
+		{TokenSymbol, "++", 0, 0},
+		{TokenString, "str", 0, 2},
+		{TokenSymbol, "平", 0, 7},
+		{TokenNumber, "032", 0, 10},
+		{TokenSymbol, "^t", 0, 13},
+		{TokenSymbol, "-a.bc", 1, 0},
+		{TokenSymbol, ":po", 1, 6},
+		{TokenSymbol, "set", 2, 0},
+		{TokenSymbol, "_", 2, 4},
+		{TokenSymbol, "+", 2, 6},
+		{TokenSymbol, "*", 2, 8},
+		{TokenSymbol, "&", 2, 10},
+		{TokenSymbol, "|", 2, 12},
+		{TokenSymbol, "<", 2, 14},
+		{TokenSymbol, ">", 2, 16},
+		{TokenSymbol, ":", 2, 18},
+		{TokenSymbol, "%", 2, 20},
+		{TokenSymbol, "/", 2, 22},
+		{TokenSymbol, "-", 2, 24},
+		{TokenSymbol, "%-平仮-*k/", 3, 1},
 	}}
 }
 
 func numberData() Dataset {
-	return Dataset{name: "numbers", input: "5 7 -13\n47 -1.34\r\n27.234-b", tokens: []Token{
-		{TokenNumber, "5", 0, 0},
-		{TokenNumber, "7", 0, 2},
-		{TokenSymbol, "-", 0, 4},
-		{TokenNumber, "13", 0, 5},
+	return Dataset{name: "numbers", input: "05 7 -13\n47 -1.34\r\n27.234-b", tokens: []Token{
+		{TokenNumber, "05", 0, 0},
+		{TokenNumber, "7", 0, 3},
+		{TokenSymbol, "-", 0, 5},
+		{TokenNumber, "13", 0, 6},
 		{TokenNumber, "47", 1, 0},
 		{TokenSymbol, "-", 1, 3},
 		{TokenNumber, "1.34", 1, 4},
@@ -139,17 +140,17 @@ func complexData() Dataset {
 }
 
 func concatData() Dataset {
-	return Dataset{name: "concat", input: "\"test 555\".34.23.33平35-3;4\n4/!pos7true9\"test平\"\n#test\n\"test2\"", tokens: []Token{
+	return Dataset{name: "concat", input: "\"test 555\".34.23.\"\"平35-3;4\n4/!pos7true9\"test平\"\n#test\n\"test2\"", tokens: []Token{
 		{TokenString, "test 555", 0, 0},
-		{TokenTerminator, nil, 0, 10},
+		{TokenSymbol, ".", 0, 10},
 		{TokenNumber, "34.23", 0, 11},
-		{TokenTerminator, nil, 0, 16},
-		{TokenNumber, "33", 0, 17},
+		{TokenSymbol, ".", 0, 16},
+		{TokenString, "", 0, 17},
 		{TokenSymbol, "平", 0, 19},
 		{TokenNumber, "35", 0, 22},
 		{TokenSymbol, "-", 0, 24},
 		{TokenNumber, "3", 0, 25},
-		{TokenIllegal, ";", 0, 26},
+		{TokenSymbol, ";", 0, 26},
 		{TokenNumber, "4", 0, 27},
 		{TokenNumber, "4", 1, 0},
 		{TokenSymbol, "/!pos", 1, 1},
@@ -162,11 +163,7 @@ func concatData() Dataset {
 }
 
 func illegalData() Dataset {
-	return Dataset{name: "illegal", input: "{}[] \"test\n", tokens: []Token{
-		{TokenIllegal, "{", 0, 0},
-		{TokenIllegal, "}", 0, 1},
-		{TokenIllegal, "[", 0, 2},
-		{TokenIllegal, "]", 0, 3},
-		{TokenIllegal, "test", 0, 5},
+	return Dataset{name: "illegal", input: "\"test\n", tokens: []Token{
+		{TokenIllegal, "test", 0, 0},
 	}}
 }
