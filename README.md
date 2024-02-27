@@ -3,14 +3,15 @@
 ## Grammar
 
 ```
-  <program>    --> <list>*
+  <program>    --> <form>*
+  <form>       --> (<datum>* | <symbol>*)
+  <symbol>     --> <unicode>+ | <unicode>+(?=<string>) | <unicode>+(?=<number>) | <unicode>+(?=<comment>) 
   <comment>    --> #<any>\n
 
-  <datum>      --> <boolean> | <number> | <string> | <symbol> | <list>
-  <list>       --> (<datum>*)
-  <boolean>    --> true | false
+  <datum>      --> <boolean> | <int> | <float> | <string> | <nil>
   <nil>        --> nil
-  <number>     --> 0 | 1 | ... | 9 | 1.23
+  <boolean>    --> true | false
+  <int>        --> 0 | 1 | ... | 9 | 1.23
+  <float>      --> <int>.<int>
   <string>     --> "<unicode>*"
-  <symbol>     --> <unicode>+ | <unicode>+(?=<string>) | <unicode>+(?=<number>) | <unicode>+(?=<comment>) 
 ```

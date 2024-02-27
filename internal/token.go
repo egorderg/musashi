@@ -1,26 +1,29 @@
-package lexer
+package internal
 
 import (
 	"unicode"
 )
 
+type tokenId int
+
 const (
-	TokenEOF = iota
-	TokenNil
-	TokenBool
-	TokenNumber
-	TokenString
-	TokenSymbol
-	TokenLeftParen
-	TokenRightParen
-	TokenIllegal
+	tokenEOF tokenId = iota
+	tokenNil
+	tokenBool
+	tokenFloat
+	tokenInt
+	tokenString
+	tokenSymbol
+	tokenLeftParen
+	tokenRightParen
+	tokenIllegal
 )
 
-type Token struct {
-	Type   int
-	Value  any
-	Row    int
-	Column int
+type token struct {
+	id    tokenId
+	value string
+	row   int
+	col   int
 }
 
 func isNewLine(r rune) bool {
@@ -55,13 +58,13 @@ func isRightParen(r rune) bool {
 	return r == ')'
 }
 
-func keywordType(s string) (int, any) {
+func keywordId(s string) (tokenId, string) {
 	switch {
 	case s == "true" || s == "false":
-		return TokenBool, s
+		return tokenBool, s
 	case s == "nil":
-		return TokenNil, nil
+		return tokenNil, ""
 	}
 
-	return TokenIllegal, nil
+	return tokenIllegal, ""
 }

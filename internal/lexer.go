@@ -1,4 +1,4 @@
-package lexer
+package internal
 
 import (
 	"bufio"
@@ -6,22 +6,22 @@ import (
 	"unicode"
 )
 
-type Lexer struct {
+type lexer struct {
 	row    int
 	col    int
 	colls  int
 	reader *bufio.Reader
 }
 
-func NewLexer(r *bufio.Reader) *Lexer {
-	return &Lexer{reader: r}
+func newLexer(r io.Reader) *lexer {
+	return &lexer{reader: bufio.NewReader(r)}
 }
 
-func (l *Lexer) Next() Token {
+func (l *lexer) next() token {
 	for {
 		r, eof := l.readRune()
 		if eof {
-			return l.newToken(TokenEOF, nil, 1)
+			return l.newToken(tokenEOF, "", 1)
 		}
 
 		if unicode.IsSpace(r) {
@@ -46,12 +46,12 @@ func (l *Lexer) Next() Token {
 	}
 }
 
-func (l *Lexer) lex(r rune) Token {
+func (l *lexer) lex(r rune) token {
 	switch {
 	case isLeftParen(r):
-		return l.newToken(TokenLeftParen, nil, 1)
+		return l.newToken(tokenLeftParen, "", 1)
 	case isRightParen(r):
-		return l.newToken(TokenRightParen, nil, 1)
+		return l.newToken(tokenRightParen, "", 1)
 	case isNumber(r):
 		l.unreadRune()
 		return l.lexNumber()
@@ -63,7 +63,7 @@ func (l *Lexer) lex(r rune) Token {
 	}
 }
 
-func (l *Lexer) lexNumber() Token {
+func (l *lexer) lexNumber() token {
 	isFloat := false
 	v := l.readTill(func(i int, r rune) bool {
 		if isFloatPoint(r) && !isFloat {
@@ -74,10 +74,14 @@ func (l *Lexer) lexNumber() Token {
 		return isNumber(r)
 	})
 
-	return l.newToken(TokenNumber, string(v), len(v))
+	if isFloat {
+		return l.newToken(tokenFloat, string(v), len(v))
+	} else {
+		return l.newToken(tokenInt, string(v), len(v))
+	}
 }
 
-func (l *Lexer) lexString() Token {
+func (l *lexer) lexString() token {
 	isInvalid := false
 	v := l.readTill(func(i int, r rune) bool {
 		if isNewLine(r) {
@@ -91,28 +95,28 @@ func (l *Lexer) lexString() Token {
 	s := string(v)
 
 	if isInvalid {
-		return l.newToken(TokenIllegal, s, len(s)+1)
+		return l.newToken(tokenIllegal, s, len(s)+1)
 	} else {
 		l.readRune()
 	}
 
-	return l.newToken(TokenString, s, len(s)+2)
+	return l.newToken(tokenString, s, len(s)+2)
 }
 
-func (l *Lexer) lexSymbol() Token {
+func (l *lexer) lexSymbol() token {
 	v := l.readTill(func(_ int, r rune) bool {
 		return !isSpace(r) && !isStringQuote(r) && !isNumber(r) && !isComment(r)
 	})
 
 	s := string(v)
-	if t, tval := keywordType(s); t != TokenIllegal {
+	if t, tval := keywordId(s); t != tokenIllegal {
 		return l.newToken(t, tval, len(s))
 	}
 
-	return l.newToken(TokenSymbol, s, len(s))
+	return l.newToken(tokenSymbol, s, len(s))
 }
 
-func (l *Lexer) readTill(cb func(i int, r rune) bool) []rune {
+func (l *lexer) readTill(cb func(i int, r rune) bool) []rune {
 	v := make([]rune, 0, 8)
 	i := 0
 
@@ -135,7 +139,7 @@ func (l *Lexer) readTill(cb func(i int, r rune) bool) []rune {
 	return v
 }
 
-func (l *Lexer) readRune() (rune, bool) {
+func (l *lexer) readRune() (rune, bool) {
 	for {
 		r, s, err := l.reader.ReadRune()
 		if err != nil {
@@ -152,18 +156,18 @@ func (l *Lexer) readRune() (rune, bool) {
 	}
 }
 
-func (l *Lexer) unreadRune() {
+func (l *lexer) unreadRune() {
 	l.col -= l.colls
 	if err := l.reader.UnreadRune(); err != nil {
 		panic(err)
 	}
 }
 
-func (l *Lexer) resetPos() {
+func (l *lexer) resetPos() {
 	l.col = 0
 	l.row++
 }
 
-func (l *Lexer) newToken(t int, v any, length int) Token {
-	return Token{Type: t, Value: v, Column: l.col - length, Row: l.row}
+func (l *lexer) newToken(id tokenId, v string, length int) token {
+	return token{id: id, value: v, col: l.col - length, row: l.row}
 }
