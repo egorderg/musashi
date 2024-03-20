@@ -12,7 +12,7 @@ const (
 )
 
 type AstProgram struct {
-	forms []*AstForm
+	forms []AstForm
 }
 
 type AstForm struct {

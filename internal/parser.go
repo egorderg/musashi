@@ -16,63 +16,73 @@ func newParser(r io.Reader) *parser {
 	}
 }
 
-func (p *parser) parse() (*AstProgram, bool) {
-	forms := make([]*AstForm, 0)
+func (p *parser) parse() (AstProgram, bool) {
+	forms := make([]AstForm, 0)
 
 	for {
-		if form, eof := p.parseForm(); !eof {
+		item, _ := p.parseItem()
+		if form, ok := item.(AstForm); ok {
 			forms = append(forms, form)
 		} else {
+			// TODO: error
 			break
 		}
 	}
 
 	if len(p.errors) > 0 {
-		return nil, false
+		return AstProgram{}, false
 	}
 
-	return &AstProgram{forms: forms}, true
+	return AstProgram{forms: forms}, true
 }
 
-func (p *parser) parseForm() (*AstForm, bool) {
-	items := make([]AstItem, 0)
-	if _, eof := p.nextToken(tokenLeftParen); eof {
-		return nil, true
+func (p *parser) parseItem() (AstItem, token) {
+	t := p.lexer.next()
+	if t.id == tokenEOF {
+		return nil, t
 	}
 
+	switch t.id {
+	case tokenNil:
+		return AstDatum{id: datumNil, value: t.value}, t
+	case tokenInt:
+		return AstDatum{id: datumInt, value: t.value}, t
+	case tokenFloat:
+		return AstDatum{id: datumFloat, value: t.value}, t
+	case tokenBool:
+		return AstDatum{id: datumBool, value: t.value}, t
+	case tokenString:
+		return AstDatum{id: datumString, value: t.value}, t
+	case tokenSymbol:
+		return AstSymbol{name: t.value}, t
+	case tokenLeftParen:
+		if f, ok := p.parseForm(); ok {
+			return f, t
+		}
+		return nil, t
+	default:
+		return nil, t
+	}
+}
+
+func (p *parser) parseForm() (AstItem, bool) {
+	items := make([]AstItem, 0)
+
 	for {
-		tok := p.lexer.next()
+		item, tok := p.parseItem()
 		if tok.id == tokenEOF {
-			return nil, true
+			// TODO: error
+			return nil, false
 		}
 
 		if tok.id == tokenRightParen {
 			break
 		}
 
-		items = append(items, p.parseItem(tok))
+		items = append(items, item)
 	}
 
-	return &AstForm{items: items}, false
-}
-
-func (p *parser) parseItem(t token) AstItem {
-	switch t.id {
-	case tokenNil:
-		return AstDatum{id: datumNil, value: t.value}
-	case tokenInt:
-		return AstDatum{id: datumInt, value: t.value}
-	case tokenFloat:
-		return AstDatum{id: datumFloat, value: t.value}
-	case tokenBool:
-		return AstDatum{id: datumBool, value: t.value}
-	case tokenString:
-		return AstDatum{id: datumString, value: t.value}
-	case tokenSymbol:
-		return AstSymbol{name: t.value}
-	default:
-		return nil
-	}
+	return AstForm{items: items}, true
 }
 
 func (p *parser) nextToken(want tokenId) (token, bool) {
